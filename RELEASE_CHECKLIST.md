@@ -50,11 +50,11 @@ Checked items below include repository-local facts and the cloud checks complete
 - [x] Streamlit Community Cloud app created from `app.py`.
 - [x] Deployment access set to Public.
 - [x] Final public URL recorded in `DEPLOYMENT.md`.
-- [ ] Signed-out incognito/private-window test passed.
+- [x] Signed-out incognito/private-window test passed.
 - [ ] Second-browser test passed.
 - [ ] Phone test passed.
 - [ ] Mobile-data test passed.
-- [x] No login or repository prompt appeared during the no-credential public HTTP check.
+- [x] No login or repository prompt appeared during signed-out browser and no-credential public HTTP checks.
 - [x] Public study CSV and case CSV/JSON/HTML/PDF downloads passed.
 - [x] Public mobile layout and effective 200% zoom review passed.
 - [x] Final QR code generated from the real public URL.
