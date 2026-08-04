@@ -224,12 +224,12 @@ def test_deployment_documentation_records_verified_public_release() -> None:
         "Streamlit Community Cloud app created from `app.py`.",
         "Deployment access set to Public.",
         "Final public URL recorded in `DEPLOYMENT.md`.",
+        "Signed-out incognito/private-window test passed.",
         "Public study CSV and case CSV/JSON/HTML/PDF downloads passed.",
         "Final QR code generated from the real public URL.",
     ):
         assert f"- [x] {completed_item}" in actual_deployment
     for pending_item in (
-        "Signed-out incognito/private-window test passed.",
         "Second-browser test passed.",
         "Phone test passed.",
         "Mobile-data test passed.",
