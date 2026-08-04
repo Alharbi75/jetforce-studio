@@ -206,14 +206,33 @@ def test_ignore_files_cover_release_exclusions_and_streamlit_secrets() -> None:
         assert pattern in dockerignore
 
 
-def test_deployment_documentation_uses_placeholder_and_makes_no_deployment_claim() -> None:
+def test_deployment_documentation_records_verified_public_release() -> None:
     deployment = (PROJECT_ROOT / "DEPLOYMENT.md").read_text(encoding="utf-8")
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     checklist = (PROJECT_ROOT / "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
+    public_url = "https://jetforce-studio-mec350.streamlit.app/"
 
-    assert "PUBLIC_APP_URL_TO_BE_ADDED_AFTER_DEPLOYMENT" in deployment
+    assert public_url in deployment
+    assert public_url in readme
+    assert "PUBLIC_APP_URL_TO_BE_ADDED_AFTER_DEPLOYMENT" not in deployment
+    assert (PROJECT_ROOT / "presentation_backup" / "public_app_qr.png").is_file()
     actual_deployment = checklist.split(
         "## Actual public deployment - complete only after deployment", maxsplit=1
     )[1]
-    assert "- [x]" not in actual_deployment
-    assert "deployment-ready" in checklist
-    assert "not **actually deployed**" in checklist
+    for completed_item in (
+        "Repository pushed to the selected GitHub account.",
+        "Streamlit Community Cloud app created from `app.py`.",
+        "Deployment access set to Public.",
+        "Final public URL recorded in `DEPLOYMENT.md`.",
+        "Public study CSV and case CSV/JSON/HTML/PDF downloads passed.",
+        "Final QR code generated from the real public URL.",
+    ):
+        assert f"- [x] {completed_item}" in actual_deployment
+    for pending_item in (
+        "Signed-out incognito/private-window test passed.",
+        "Second-browser test passed.",
+        "Phone test passed.",
+        "Mobile-data test passed.",
+    ):
+        assert f"- [ ] {pending_item}" in actual_deployment
+    assert "The application is actually deployed." in checklist
