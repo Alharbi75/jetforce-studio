@@ -12,6 +12,14 @@ Use `default_simulator.png` if the live app cannot be shown. The HTML/PDF,
 result table, and charts provide offline evidence of the same calculation.
 They are presentation fallbacks, not an interactive simulator and not CFD.
 
+The live public application is:
+
+<https://jetforce-studio-mec350.streamlit.app/>
+
+`public_app_qr.png` encodes that exact URL for presentation slides and printed
+material. Recheck the live link shortly before presenting because Community
+Cloud may need a brief cold start after inactivity.
+
 To rebuild every generated fallback except the browser screenshot, run:
 
 ```bash
