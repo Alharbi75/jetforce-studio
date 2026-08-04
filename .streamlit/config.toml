@@ -1,0 +1,28 @@
+[theme]
+base = "dark"
+primaryColor = "#22D3EE"
+backgroundColor = "#06111F"
+secondaryBackgroundColor = "#10243A"
+textColor = "#EAF5FF"
+linkColor = "#67E8F9"
+font = "sans-serif"
+baseRadius = "medium"
+buttonRadius = "medium"
+borderColor = "#31506A"
+showWidgetBorder = true
+showSidebarBorder = true
+chartCategoricalColors = ["#22D3EE", "#FBBF24", "#FB7185", "#A78BFA", "#34D399"]
+
+[server]
+headless = true
+runOnSave = false
+enableCORS = true
+enableXsrfProtection = true
+maxUploadSize = 10
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = "none"
+toolbarMode = "minimal"
