@@ -1,0 +1,10 @@
+quantity,symbol,value,unit,display_value
+Fluid density,rho,1000.0,kg/m^3,1000
+Jet diameter,d,0.02,m,0.0200
+Inlet jet velocity,V,10.0,m/s,10.00
+Jet area,A,0.0003141592653589793,m^2,3.142 x 10^-4
+Volumetric flow rate,Q,0.003141592653589793,m^3/s,3.142 x 10^-3
+Mass flow rate,mdot,3.1415926535897927,kg/s,3.142
+Horizontal force on plate,Fx,31.415926535897928,N,31.42
+Vertical force on plate,Fy,0.0,N,0.00
+Resultant force on plate,FR,31.415926535897928,N,31.42
