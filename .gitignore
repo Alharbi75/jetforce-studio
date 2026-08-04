@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Environments and packaging
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+*.zip
+
+# Streamlit and local settings
+.streamlit/secrets.toml
+.env
+.env.*
+.agents/
+.claude/
+
+# Generated reports and temporary renderings
+exports/*
+!exports/.gitkeep
+tmp/
+output/
+*.log
+
+# Editors and operating systems
+.DS_Store
+__MACOSX/
+Thumbs.db
+.idea/
+.vscode/
+*.swp
