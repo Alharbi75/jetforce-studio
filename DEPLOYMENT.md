@@ -18,14 +18,19 @@ JetForce Studio requires no secret, API key, database, authentication provider, 
 12. Choose a clear URL if available.
 13. Test in a signed-out incognito/private window.
 14. Test on a phone, including a mobile-data connection when possible.
-15. Record the final URL in the placeholder below.
+15. Record the final URL in the deployment record below.
 16. Generate a QR code for the presentation only after the final URL is known.
 
-```text
-PUBLIC_APP_URL_TO_BE_ADDED_AFTER_DEPLOYMENT
-```
+## Current public deployment
 
-Do not replace the placeholder with a guessed or example deployment URL.
+JetForce Studio was deployed on 5 August 2026 using the public
+[`Alharbi75/jetforce-studio`](https://github.com/Alharbi75/jetforce-studio)
+repository, branch `main`, entry point `app.py`, and Python 3.11.
+
+**Public application:** <https://jetforce-studio-mec350.streamlit.app/>
+
+The presentation QR code is stored at
+`presentation_backup/public_app_qr.png` and encodes this exact URL.
 
 ## Required post-deployment checks
 

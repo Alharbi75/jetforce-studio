@@ -1,6 +1,6 @@
 # JetForce Studio release checklist
 
-Checked items below are repository-local facts. Cloud, incognito, second-browser, and phone checks remain unchecked until an actual public deployment occurs.
+Checked items below include repository-local facts and the cloud checks completed on 5 August 2026. Physical-phone, mobile-data, and independent second-browser checks remain presentation-day owner checks.
 
 ## Application and physics
 
@@ -46,17 +46,17 @@ Checked items below are repository-local facts. Cloud, incognito, second-browser
 
 ## Actual public deployment - complete only after deployment
 
-- [ ] Repository pushed to the selected GitHub account.
-- [ ] Streamlit Community Cloud app created from `app.py`.
-- [ ] Deployment access set to Public.
-- [ ] Final public URL recorded in `DEPLOYMENT.md`.
+- [x] Repository pushed to the selected GitHub account.
+- [x] Streamlit Community Cloud app created from `app.py`.
+- [x] Deployment access set to Public.
+- [x] Final public URL recorded in `DEPLOYMENT.md`.
 - [ ] Signed-out incognito/private-window test passed.
 - [ ] Second-browser test passed.
 - [ ] Phone test passed.
 - [ ] Mobile-data test passed.
-- [ ] No login or repository prompt appeared.
-- [ ] Public CSV and report downloads passed.
-- [ ] Public mobile layout and 200% zoom review passed.
-- [ ] Final QR code generated from the real public URL.
+- [x] No login or repository prompt appeared during the no-credential public HTTP check.
+- [x] Public study CSV and case CSV/JSON/HTML/PDF downloads passed.
+- [x] Public mobile layout and effective 200% zoom review passed.
+- [x] Final QR code generated from the real public URL.
 
-Until those items are completed, describe the repository as **deployment-ready**, not **actually deployed**.
+The application is actually deployed. Do not claim the remaining physical-device and independent-browser checks until they are completed.

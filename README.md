@@ -180,13 +180,18 @@ Dockerfile                     Optional portable fallback
 
 ## Public deployment overview
 
-The repository is prepared for Streamlit Community Cloud with `app.py` as the entry point and runtime-only dependencies in `requirements.txt`. Follow [DEPLOYMENT.md](DEPLOYMENT.md). The public URL placeholder is:
+JetForce Studio is publicly deployed on Streamlit Community Cloud from the
+`main` branch with `app.py` as the entry point and Python 3.11:
 
-```text
-PUBLIC_APP_URL_TO_BE_ADDED_AFTER_DEPLOYMENT
-```
+- **Live application:** <https://jetforce-studio-mec350.streamlit.app/>
+- **Public source:** <https://github.com/Alharbi75/jetforce-studio>
+- **Deployment record:** [DEPLOYMENT.md](DEPLOYMENT.md)
+- **Presentation QR code:** [public_app_qr.png](presentation_backup/public_app_qr.png)
 
-No public deployment or signed-out/mobile post-deployment check should be claimed until the owner performs it with account access.
+The live deployment has been checked for the default Course Mode result, all
+six pages, report and study downloads, mobile-width layout, effective 200%
+zoom, and browser-console errors. Physical-phone, mobile-data, and independent
+second-browser checks remain owner presentation-day checks.
 
 ## Privacy
 
