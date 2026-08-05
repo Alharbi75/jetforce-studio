@@ -27,6 +27,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, cast
 
+from .traceability import MODEL_REVISION, application_version, build_commit
+
 SCHEMA_VERSION = "1.0"
 DEFAULT_REPORT_TITLE = (
     "Interactive Numerical Modeling and Analysis of a Water Jet Striking a Flat or Curved Plate"
@@ -155,16 +157,20 @@ def _plain(value: Any) -> Any:
         return {str(key): _plain(item) for key, item in value.items()}
     if hasattr(value, "item") and callable(value.item):
         try:
-            return _plain(value.item())
+            scalar_value = value.item()
         except (TypeError, ValueError):
-            pass
+            scalar_value = value
+        if scalar_value is not value:
+            return _plain(scalar_value)
     if hasattr(value, "as_dict") and callable(value.as_dict):
         return _plain(value.as_dict())
     if hasattr(value, "to_dict") and callable(value.to_dict):
         try:
-            return _plain(value.to_dict())
+            mapping_value = value.to_dict()
         except TypeError:
-            pass
+            mapping_value = value
+        if mapping_value is not value:
+            return _plain(mapping_value)
     if is_dataclass(value) and not isinstance(value, type):
         return _plain(asdict(value))
     if isinstance(value, (set, frozenset)):
@@ -211,12 +217,16 @@ def _generated_time(value: datetime | str | None) -> str:
     if value is None:
         value = datetime.now(UTC)
     if isinstance(value, str):
-        if not value.strip():
+        candidate = value.strip()
+        if not candidate:
             raise ReportDataError("Generation time cannot be blank.")
-        return value
+        try:
+            value = datetime.fromisoformat(candidate.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ReportDataError("Generation time must be a valid ISO 8601 timestamp.") from exc
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
-    return value.isoformat(timespec="seconds")
+    return value.astimezone(UTC).isoformat(timespec="seconds")
 
 
 def build_report_payload(
@@ -258,16 +268,26 @@ def build_report_payload(
     if result_data.get("force_direction_defined") is False:
         result_data["force_angle_deg"] = "undefined"
 
+    generated_timestamp = _generated_time(generated_at)
     report_meta: dict[str, Any] = {
         "title": DEFAULT_REPORT_TITLE,
         "subtitle": DEFAULT_REPORT_SUBTITLE,
         "course": DEFAULT_COURSE,
-        "generated_at": _generated_time(generated_at),
         "disclaimer": DISCLAIMER,
         "review_note": REVIEW_NOTE,
     }
     if metadata is not None:
         report_meta.update(_mapping(metadata, "Metadata"))
+    # These reserved fields describe the code/model that generated the report.
+    # Apply them after user metadata so a caller cannot accidentally spoof them.
+    report_meta.update(
+        {
+            "application_version": application_version(),
+            "model_revision": MODEL_REVISION,
+            "build_commit": build_commit(),
+            "generated_at": generated_timestamp,
+        }
+    )
 
     if report_meta.get("interface_mode") == "Course Mode":
         course_input_fields = {
@@ -328,7 +348,7 @@ def build_report_payload(
             "Calculate volumetric and mass flow rates from the inlet speed.",
             "Construct the model-specific outlet velocity vector or vectors.",
             "Sum outlet momentum fluxes and subtract them from inlet momentum flux.",
-            "Report water-on-plate force components, resultant, and direction.",
+            "Report fluid-on-plate force components, resultant, and direction.",
         ],
         "hand_calculation": ({} if hand_calculation is None else _plain(hand_calculation)),
         "ideal_comparison": ({} if ideal_comparison is None else _plain(ideal_comparison)),
@@ -362,6 +382,10 @@ def _flatten(mapping: Mapping[str, Any], prefix: str = "") -> list[tuple[str, An
 
 
 _LABELS = {
+    "application_version": "Application version",
+    "model_revision": "Model revision",
+    "build_commit": "Build commit",
+    "generated_at": "Generation timestamp",
     "density": "Fluid density",
     "dynamic_viscosity": "Dynamic viscosity",
     "diameter": "Jet diameter",
@@ -487,8 +511,13 @@ def export_case_csv(
     stream = io.StringIO(newline="")
     writer = csv.writer(stream, lineterminator="\n")
     writer.writerow(("section", "field", "quantity", "value", "unit"))
-    for section in ("inputs", "results"):
-        for key, value in _flatten(payload["case"][section]):
+    sections = (
+        ("report", payload["report"]),
+        ("inputs", payload["case"]["inputs"]),
+        ("results", payload["case"]["results"]),
+    )
+    for section, values in sections:
+        for key, value in _flatten(values):
             writer.writerow(
                 (section, key, _label(key), _machine_value(value), _unit_for_value(key, value))
             )
@@ -900,7 +929,10 @@ def export_printable_html(
 <body><main>
 <header class="cover">
   <div class="eyebrow">{course}</div><h1>{title}</h1><div class="subtitle">{subtitle}</div>
-  <div class="meta"><strong>Generated:</strong> {html.escape(str(report['generated_at']))}<br>
+  <div class="meta"><strong>Application version:</strong> {html.escape(str(report['application_version']))}<br>
+  <strong>Model revision:</strong> {html.escape(str(report['model_revision']))}<br>
+  <strong>Build commit:</strong> {html.escape(str(report['build_commit']))}<br>
+  <strong>Generated:</strong> {html.escape(str(report['generated_at']))}<br>
   <strong>Analysis:</strong> Steady two-dimensional control-volume momentum<br>
   <strong>Primary result:</strong> Force exerted by the fluid on the plate{identity_html}</div>
   <div class="notice"><strong>Model scope.</strong> {html.escape(str(report['disclaimer']))}</div>
@@ -923,6 +955,247 @@ def export_printable_html(
 <section><h2>{limitations_number}. Limitations</h2><ul>{limitations}</ul></section>
 <section><h2>{references_number}. References</h2><p>{html.escape(str(payload['references']))}</p></section>
 <footer><strong>Student review required.</strong> {html.escape(str(report['review_note']))}</footer>
+</main></body></html>"""
+    return document.encode("utf-8")
+
+
+def _presentation_velocity_chart_svg(velocity_study: Any) -> str:
+    """Render supplied force-versus-velocity records as a compact inline SVG."""
+
+    records = _records(velocity_study, "Presentation velocity study")
+    if len(records) < 2:
+        raise ReportDataError("The presentation summary requires at least two velocity-study rows.")
+
+    series_names = ("Fx_N", "Fy_N", "FR_N")
+    points: list[tuple[float, tuple[float, float, float]]] = []
+    for row in records:
+        try:
+            velocity = float(row["velocity"])
+            forces = cast(
+                tuple[float, float, float], tuple(float(row[key]) for key in series_names)
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ReportDataError(
+                "The presentation velocity study requires velocity, Fx_N, Fy_N, and FR_N columns."
+            ) from exc
+        if not all(math.isfinite(value) for value in (velocity, *forces)):
+            raise ReportDataError("Presentation velocity-study values must be finite numbers.")
+        points.append((velocity, forces))
+
+    points.sort(key=lambda item: item[0])
+    x_min, x_max = points[0][0], points[-1][0]
+    if x_max <= x_min:
+        raise ReportDataError("Presentation velocity-study values must span a nonzero range.")
+    force_values = [value for _, forces in points for value in forces]
+    y_min = min(0.0, *force_values)
+    y_max = max(0.0, *force_values)
+    if y_max == y_min:
+        y_max = y_min + 1.0
+
+    width, height = 620.0, 218.0
+    left, right, top, bottom = 58.0, 18.0, 28.0, 38.0
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+
+    def x_position(value: float) -> float:
+        return left + (value - x_min) * plot_width / (x_max - x_min)
+
+    def y_position(value: float) -> float:
+        return top + (y_max - value) * plot_height / (y_max - y_min)
+
+    colors = ("#0891b2", "#d97706", "#e11d48")
+    labels = ("Fx", "Fy", "FR")
+    polylines = []
+    legend = []
+    for index, (color, label) in enumerate(zip(colors, labels, strict=True)):
+        coordinates = " ".join(
+            f"{x_position(velocity):.2f},{y_position(forces[index]):.2f}"
+            for velocity, forces in points
+        )
+        polylines.append(
+            f'<polyline points="{coordinates}" fill="none" stroke="{color}" '
+            'stroke-width="2.6" vector-effect="non-scaling-stroke"/>'
+        )
+        legend_x = left + 355.0 + index * 62.0
+        legend.append(
+            f'<line x1="{legend_x:.1f}" y1="15" x2="{legend_x + 19:.1f}" y2="15" '
+            f'stroke="{color}" stroke-width="3"/><text x="{legend_x + 24:.1f}" y="19">{label}</text>'
+        )
+
+    zero_y = y_position(0.0)
+    return f"""<svg class="velocity-chart" viewBox="0 0 {width:g} {height:g}" role="img"
+aria-label="Calculated Fx, Fy, and resultant force versus inlet velocity">
+<text x="{left:g}" y="18" class="chart-title">Force versus inlet velocity</text>
+<line x1="{left:g}" y1="{top:g}" x2="{left:g}" y2="{height - bottom:g}" class="chart-axis"/>
+<line x1="{left:g}" y1="{zero_y:.2f}" x2="{width - right:g}" y2="{zero_y:.2f}" class="chart-zero"/>
+<line x1="{left:g}" y1="{height - bottom:g}" x2="{width - right:g}" y2="{height - bottom:g}" class="chart-axis"/>
+{''.join(polylines)}{''.join(legend)}
+<text x="{left:g}" y="{height - 17:g}" text-anchor="middle">{x_min:.4g}</text>
+<text x="{width - right:g}" y="{height - 17:g}" text-anchor="middle">{x_max:.4g}</text>
+<text x="{left + plot_width / 2:.1f}" y="{height - 2:g}" text-anchor="middle">V (m/s)</text>
+<text x="{left - 7:g}" y="{top + 4:g}" text-anchor="end">{y_max:.4g}</text>
+<text x="{left - 7:g}" y="{height - bottom + 4:g}" text-anchor="end">{y_min:.4g}</text>
+<text x="13" y="{top + plot_height / 2:.1f}" text-anchor="middle" transform="rotate(-90 13 {top + plot_height / 2:.1f})">Force (N)</text>
+</svg>"""
+
+
+def export_presentation_summary_html(
+    inputs: Any,
+    result: Any | None = None,
+    *,
+    velocity_study: Any,
+    **report_options: Any,
+) -> bytes:
+    """Return a self-contained, single-page landscape presentation summary.
+
+    The caller supplies the velocity-study table produced by the authoritative
+    calculation layer.  This exporter only formats those values; it does not
+    recompute force or momentum.
+    """
+
+    payload = build_report_payload(inputs, result, **report_options)
+    report = payload["report"]
+    case = payload["case"]
+    results = case["results"]
+    chart_svg = _presentation_velocity_chart_svg(velocity_study)
+    primary_keys = ("fx_n", "fy_n", "resultant_force_n")
+    flow_keys = ("area_m2", "flow_rate_m3_s", "mass_flow_rate_kg_s")
+    try:
+        primary = {key: results[key] for key in primary_keys}
+        flow = {key: results[key] for key in flow_keys}
+    except KeyError as exc:
+        raise ReportDataError(
+            "The presentation summary requires Fx, Fy, FR, area, flow-rate, and mass-flow results."
+        ) from exc
+
+    force_cards = "".join(
+        '<div class="force-card">'
+        f'<div class="symbol">{symbol}</div><div class="force-name">{name}</div>'
+        f'<div class="force-value">{html.escape(_display_value(primary[key]))} N</div></div>'
+        for key, symbol, name in (
+            ("fx_n", "Fx", "Horizontal force"),
+            ("fy_n", "Fy", "Vertical force"),
+            ("resultant_force_n", "FR", "Resultant force"),
+        )
+    )
+
+    def summary_text(value: Any, label: str, maximum: int) -> str:
+        normalized = " ".join(str(value).split())
+        if not normalized:
+            raise ReportDataError(f"Presentation summary {label} cannot be blank.")
+        if len(normalized) > maximum:
+            raise ReportDataError(
+                f"Presentation summary {label} must be at most {maximum} characters."
+            )
+        return normalized
+
+    assumption_text = [
+        summary_text(item, f"assumption {index}", 180)
+        for index, item in enumerate(payload["assumptions"][:5], start=1)
+    ]
+    assumptions = "".join(f"<li>{html.escape(item)}</li>" for item in assumption_text)
+    fx = html.escape(_display_value(primary["fx_n"]))
+    fy = html.escape(_display_value(primary["fy_n"]))
+    resultant = html.escape(_display_value(primary["resultant_force_n"]))
+    interpretation = (
+        f"For the active case, the fluid-on-plate reaction is Fx = {fx} N and Fy = {fy} N, "
+        f"giving FR = {resultant} N. Component signs use +x with the inlet jet and +y upward."
+    )
+    identity = " · ".join(
+        html.escape(summary_text(value, label.casefold(), 60))
+        for label, value in _report_identity_rows(report)[:2]
+        if value and "Complete before submission" not in str(value)
+    )
+    subtitle = html.escape(summary_text(report["subtitle"], "subtitle", 120))
+    title = html.escape(summary_text(report["title"], "title", 120))
+    raw_model = case["inputs"].get("model", "Selected impact model")
+    model_label = report.get("model") or str(raw_model).replace("_", " ").title()
+    model = html.escape(summary_text(model_label, "model label", 80))
+    presentation_inputs = dict(case["inputs"])
+    presentation_inputs["model"] = model_label
+    if "fluid_preset" in presentation_inputs:
+        presentation_inputs["fluid_preset"] = (
+            str(presentation_inputs["fluid_preset"]).replace("_", " ").title()
+        )
+    if "unit_system" in presentation_inputs:
+        presentation_inputs["unit_system"] = {
+            "si": "SI",
+            "us_customary": "US customary",
+        }.get(
+            str(presentation_inputs["unit_system"]),
+            str(presentation_inputs["unit_system"]).replace("_", " ").title(),
+        )
+    stylesheet = """
+    @page { size: A4 landscape; margin: 7mm; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; background:#fff; color:#172033;
+      font-family:Arial,Helvetica,sans-serif; }
+    .sheet { width:283mm; min-height:196mm; height:196mm;
+      padding:5mm 6mm 4mm; border-top:3mm solid #0e7490; }
+    header { display:flex; justify-content:space-between; gap:10mm; align-items:flex-start;
+      border-bottom:1px solid #9fb7ca; padding-bottom:2.2mm; }
+    h1 { margin:0; color:#0b1f33; font-size:19pt; line-height:1.08; }
+    .subtitle { color:#0b6e99; font-size:9pt; font-weight:700; margin-top:1mm; }
+    .trace { text-align:right; color:#556275; font-size:6.8pt; line-height:1.35; white-space:nowrap; }
+    .grid { display:grid; grid-template-columns:42% 58%; gap:3.2mm; margin-top:3mm; }
+    .panel { border:1px solid #cad5e1; border-radius:2mm; padding:2.4mm; background:#fbfdff;
+      break-inside:avoid; }
+    h2 { margin:0 0 1.5mm; color:#0b1f33; font-size:10pt; border-bottom:1px solid #1bb3d8;
+      padding-bottom:1mm; }
+    .force-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:2mm; margin-bottom:2.5mm; }
+    .force-card { border-left:1.3mm solid #e11d48; background:#f4f8fb; padding:1.6mm 2mm; }
+    .symbol { color:#0b6e99; font-weight:800; font-size:9pt; }
+    .force-name { color:#556275; font-size:6.5pt; }
+    .force-value { color:#0b1f33; font-size:12pt; font-weight:800; margin-top:.5mm; }
+    .table-wrap { margin:0; overflow:hidden; }
+    table { width:100%; border-collapse:collapse; font-size:6.7pt; line-height:1.12; }
+    caption { text-align:left; font-weight:700; color:#0b1f33; padding:0 0 1mm; }
+    th, td { border:1px solid #cad5e1; padding:.85mm 1.2mm; text-align:left; }
+    thead th { color:#fff; background:#0b1f33; }
+    tbody th { background:#f4f8fb; width:51%; font-weight:600; }
+    .schematic-wrap { height:60mm; display:flex; align-items:center; justify-content:center; }
+    .schematic-wrap svg { width:100%; height:100%; }
+    .control-volume { fill:none; stroke:#72849a; stroke-width:2; stroke-dasharray:8 6; }
+    .nozzle { fill:#37485c; stroke:#172033; stroke-width:2; }
+    .plate { fill:none; stroke:#172033; stroke-width:9; stroke-linecap:round; }
+    .flow { stroke:#118ab2; stroke-width:8; stroke-linecap:round; }
+    .force { stroke:#d1495b; stroke-width:5; stroke-linecap:round; }
+    .axis { stroke:#334155; stroke-width:2.5; }
+    text { font-family:Arial,Helvetica,sans-serif; fill:#172033; font-size:12px; }
+    .force-label { fill:#a1162d; font-weight:700; }
+    .cv-label,.note-label { fill:#556275; font-size:11px; }
+    .axis-label { font-weight:700; }
+    .equation { margin:2mm 0; padding:1.7mm; background:#eaf5fa; color:#073b55;
+      font:700 8.5pt "SFMono-Regular",Consolas,monospace; text-align:center; }
+    .bottom { display:grid; grid-template-columns:38% 33% 29%; gap:3.2mm; margin-top:3mm; }
+    .velocity-chart { width:100%; height:36mm; }
+    .chart-axis { stroke:#334155; stroke-width:1.2; }
+    .chart-zero { stroke:#94a3b8; stroke-width:1; stroke-dasharray:4 3; }
+    .chart-title { font-weight:700; font-size:13px; fill:#0b1f33; }
+    ul { margin:0; padding-left:4mm; font-size:6.7pt; line-height:1.23; }
+    li { margin-bottom:.7mm; }
+    p { margin:0 0 1.5mm; font-size:7pt; line-height:1.28; }
+    .warning { border-left:1.2mm solid #b4233b; padding-left:2mm; color:#6f1627; font-weight:700; }
+    footer { margin-top:2mm; padding-top:1.2mm; border-top:1px solid #cad5e1; color:#556275;
+      font-size:6.3pt; display:flex; justify-content:space-between; }
+    @media print { .sheet { break-after:avoid; break-inside:avoid; } }
+    """
+    document = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} - one-page presentation summary</title><style>{stylesheet}</style></head><body>
+<main class="sheet"><header><div><h1>{title}</h1><div class="subtitle">{subtitle} · {model}</div></div>
+<div class="trace">MEC350 Fluid Mechanics<br>Version {html.escape(str(report['application_version']))} · {html.escape(str(report['model_revision']))}<br>
+Build {html.escape(str(report['build_commit']))} · {html.escape(str(report['generated_at']))}</div></header>
+<div class="grid"><section class="panel"><h2>Active inputs and primary fluid-on-plate results</h2>
+<div class="force-grid">{force_cards}</div>{_table_html(presentation_inputs, 'Active case inputs')}</section>
+<section class="panel"><h2>Geometry and control volume</h2><div class="schematic-wrap">{build_schematic_svg(payload)}</div></section></div>
+<div class="equation">F_plate = mdot V_in - sum(mdot_j V_out,j) &nbsp; | &nbsp; FR = sqrt(Fx^2 + Fy^2)</div>
+<div class="bottom"><section class="panel"><h2>Flow quantities and velocity trend</h2>{_table_html(flow, 'Calculated SI flow quantities')}{chart_svg}</section>
+<section class="panel"><h2>Model assumptions</h2><ul>{assumptions}</ul></section>
+<section class="panel"><h2>Interpretation and limitation</h2><p>{interpretation}</p>
+<p>The velocity chart holds density, diameter, geometry, angles, split, and prescribed retention coefficient fixed while V changes.</p>
+<p class="warning">This application uses a numerical control-volume momentum model. The flow visualization is illustrative and is not a full CFD simulation. It is not experimental evidence.</p></section></div>
+<footer><span>{identity or 'Student details: complete before submission'}</span><span>Force exerted by the fluid on the plate · +x inlet direction · +y upward</span></footer>
 </main></body></html>"""
     return document.encode("utf-8")
 
@@ -1484,6 +1757,9 @@ def export_case_pdf(
     story.append(_pdf_paragraph(payload["report"]["title"], styles["CoverTitle"], Paragraph))
     story.append(_pdf_paragraph(payload["report"]["subtitle"], styles["CoverSubtitle"], Paragraph))
     cover_data = [
+        ["Application version", payload["report"]["application_version"]],
+        ["Model revision", payload["report"]["model_revision"]],
+        ["Build commit", payload["report"]["build_commit"]],
         ["Generated", payload["report"]["generated_at"]],
         ["Analysis", "Steady two-dimensional control-volume momentum"],
         ["Primary result", "Force exerted by the fluid on the plate"],
@@ -1767,6 +2043,7 @@ def write_export_file(data: bytes | str, destination: str | Path) -> Path:
 generate_csv = export_case_csv
 generate_json = export_case_json
 generate_html_report = export_printable_html
+generate_presentation_summary = export_presentation_summary_html
 generate_pdf_report = export_case_pdf
 dataframe_to_csv = export_parametric_csv
 save_export = write_export_file
@@ -1789,11 +2066,13 @@ __all__ = [
     "export_case_json",
     "export_case_pdf",
     "export_parametric_csv",
+    "export_presentation_summary_html",
     "export_printable_html",
     "generate_csv",
     "generate_html_report",
     "generate_json",
     "generate_pdf_report",
+    "generate_presentation_summary",
     "reportlab_available",
     "safe_export_filename",
     "save_export",

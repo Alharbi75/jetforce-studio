@@ -54,6 +54,7 @@ from .course import (
     ADVANCED_MODE_NOTICE,
     COURSE_MODE_EXPLANATION,
     COURSE_MODEL_LABELS,
+    DEMONSTRATION_PRESET_DESCRIPTIONS,
     AppMode,
     DemonstrationPreset,
     demonstration_inputs,
@@ -507,6 +508,7 @@ def initialize_session_state() -> None:
         "jf_previous_mode": AppMode.COURSE.value,
         "jf_presentation_view": False,
         "jf_show_calculation": False,
+        "jf_demo_preset": DemonstrationPreset.NORMAL_PLATE.value,
         "jf_unit_system": "SI",
     }
     for key, value in defaults.items():
@@ -603,6 +605,7 @@ def reset_to_default() -> None:
 
     _apply_inputs_to_session(textbook_course_inputs())
     st.session_state.jf_show_calculation = False
+    st.session_state.jf_demo_preset = DemonstrationPreset.NORMAL_PLATE.value
     st.session_state.jf_course_case = _case_state_snapshot()
     st.session_state.pop("jf_report_package", None)
 
@@ -610,10 +613,18 @@ def reset_to_default() -> None:
 def load_demonstration_case(preset: DemonstrationPreset | str) -> None:
     """Load one documented classroom preset into the active session."""
 
-    _apply_inputs_to_session(demonstration_inputs(preset))
+    selected = DemonstrationPreset(preset)
+    _apply_inputs_to_session(demonstration_inputs(selected))
+    st.session_state.jf_demo_preset = selected.value
     st.session_state.pop("jf_report_package", None)
     if st.session_state.get("jf_mode") == AppMode.COURSE.value:
         st.session_state.jf_course_case = _case_state_snapshot()
+
+
+def _load_selected_demonstration() -> None:
+    """Load the demonstration currently selected in the shared case panel."""
+
+    load_demonstration_case(st.session_state.jf_demo_preset)
 
 
 def _diameter_slider_changed() -> None:
@@ -696,7 +707,9 @@ def render_sidebar_controls(
             help="Used only for the Reynolds-number diagnostic; it does not modify the momentum force.",
         )
 
-    diameter_max_mm = 100.0 if course_mode else 1000.0 * MAX_DIAMETER_M
+    # Keep the widget bounds identical across modes so Streamlit preserves the
+    # slider identity and does not remount it at the minimum during a mode switch.
+    diameter_max_mm = 1000.0 * MAX_DIAMETER_M
     controls.slider(
         "Jet diameter, d (mm)",
         min_value=1000.0 * MIN_DIAMETER_M,
@@ -708,7 +721,7 @@ def render_sidebar_controls(
         help="Circular inlet diameter. The value is converted to metres before A = πd²/4 is evaluated.",
     )
     controls.caption(f"Internal SI value: {float(st.session_state.jf_diameter):.6g} m")
-    if not presentation:
+    if not course_mode and not presentation:
         controls.number_input(
             "Jet diameter, d (m) - precise entry",
             min_value=MIN_DIAMETER_M,
@@ -721,7 +734,7 @@ def render_sidebar_controls(
             help="Precise SI entry synchronized with the millimetre slider above.",
         )
 
-    velocity_max = 50.0 if course_mode else MAX_VELOCITY_M_S
+    velocity_max = MAX_VELOCITY_M_S
     controls.slider(
         "Inlet jet velocity, V (m/s)",
         min_value=MIN_VELOCITY_M_S,
@@ -732,7 +745,7 @@ def render_sidebar_controls(
         on_change=_velocity_slider_changed,
         help="Uniform section-average inlet velocity directed along positive x.",
     )
-    if not presentation:
+    if not course_mode and not presentation:
         controls.number_input(
             "Inlet jet velocity, V (m/s) - precise entry",
             min_value=MIN_VELOCITY_M_S,
@@ -756,14 +769,17 @@ def render_sidebar_controls(
             st.session_state.jf_model = current_model
         if st.session_state.get("jf_model_widget") not in model_options:
             st.session_state.jf_model_widget = current_model
-        selected_model = controls.segmented_control(
+        # A single compact widget type avoids a remount with no selected value
+        # when Course and Advanced Mode expose different option sets. Session
+        # state supplies the selection, so index=None avoids Streamlit's
+        # default-value/session-state conflict warning.
+        selected_model = controls.selectbox(
             "Impact model",
             options=model_options,
+            index=None,
             format_func=lambda key: course_labels.get(key, MODEL_LABELS[key]),
             key="jf_model_widget",
             persist_state="session",
-            required=True,
-            width="stretch",
             on_change=_model_changed,
             help="Selects the documented outlet-velocity construction used by the momentum balance.",
         )
@@ -833,22 +849,30 @@ def render_sidebar_controls(
         )
         unit_system = str(selected_units or "SI")
 
-    with controls.container(horizontal=True, gap="small"):
-        st.button(
-            "Reset to Default",
-            icon=":material/restart_alt:",
-            on_click=reset_to_default,
-            width="stretch",
-            help="Restore the exact 1000 kg/m³, 20 mm, 10 m/s normal-plate case.",
-        )
-        st.button(
-            "Load Demonstration Case",
-            icon=":material/science:",
-            on_click=load_demonstration_case,
-            args=(DemonstrationPreset.NINETY_DEGREE_DEFLECTION,),
-            width="stretch",
-            help="Load the documented ideal 90-degree deflection example.",
-        )
+    controls.markdown("#### Classroom demonstration")
+    controls.selectbox(
+        "Demonstration case",
+        options=[preset.value for preset in DemonstrationPreset],
+        key="jf_demo_preset",
+        persist_state="session",
+        help="Choose a documented case, then load it explicitly.",
+    )
+    selected_preset = DemonstrationPreset(st.session_state.jf_demo_preset)
+    controls.caption(DEMONSTRATION_PRESET_DESCRIPTIONS[selected_preset])
+    controls.button(
+        "Load Selected Case",
+        icon=":material/science:",
+        on_click=_load_selected_demonstration,
+        width="stretch",
+        help="Replace the active engineering inputs with the selected documented case.",
+    )
+    controls.button(
+        "Reset to Default",
+        icon=":material/restart_alt:",
+        on_click=reset_to_default,
+        width="stretch",
+        help="Restore the exact 1000 kg/m³, 20 mm, 10 m/s normal-plate case.",
+    )
 
     density = float(st.session_state.jf_density)
     fluid_preset = str(st.session_state.jf_fluid_preset)

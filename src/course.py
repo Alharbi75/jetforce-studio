@@ -26,11 +26,33 @@ class AppMode(StrEnum):
 
 
 class DemonstrationPreset(StrEnum):
-    """One-click cases used during a classroom presentation."""
+    """Selectable cases used during a classroom presentation."""
 
     NORMAL_PLATE = "Normal Plate"
     DOUBLE_VELOCITY = "Double Velocity"
     NINETY_DEGREE_DEFLECTION = "90-Degree Deflection"
+
+
+COURSE_PRIMARY_DESTINATIONS: tuple[str, ...] = (
+    "Simulator",
+    "Calculation and Results",
+    "Theory and Assumptions",
+    "Report and Export",
+)
+
+COURSE_SECONDARY_DESTINATION = "About the Project"
+
+DEMONSTRATION_PRESET_DESCRIPTIONS: dict[DemonstrationPreset, str] = {
+    DemonstrationPreset.NORMAL_PLATE: (
+        "Textbook normal impact: ρ = 1000 kg/m³, d = 20 mm, V = 10 m/s."
+    ),
+    DemonstrationPreset.DOUBLE_VELOCITY: (
+        "Normal impact at V = 20 m/s, demonstrating the four-times V² force response."
+    ),
+    DemonstrationPreset.NINETY_DEGREE_DEFLECTION: (
+        "Ideal single outlet at β = 90° with retained speed k = 1."
+    ),
+}
 
 
 COURSE_MODE_EXPLANATION = (
@@ -91,6 +113,9 @@ __all__ = [
     "ADVANCED_MODE_NOTICE",
     "COURSE_MODEL_LABELS",
     "COURSE_MODE_EXPLANATION",
+    "COURSE_PRIMARY_DESTINATIONS",
+    "COURSE_SECONDARY_DESTINATION",
+    "DEMONSTRATION_PRESET_DESCRIPTIONS",
     "PRIVACY_STATEMENT",
     "AppMode",
     "DemonstrationPreset",

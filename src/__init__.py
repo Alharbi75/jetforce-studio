@@ -76,8 +76,16 @@ from .validation import (
     validate_simulation_inputs,
     validate_sweep_points,
 )
+from .verification import (
+    ClosedFormCase,
+    ClosedFormCheck,
+    independent_closed_form_checks,
+    independent_closed_form_records,
+)
 
 __all__ = [
+    "ClosedFormCase",
+    "ClosedFormCheck",
     "FluidPreset",
     "HandCalculationTrace",
     "IdealComparison",
@@ -116,6 +124,8 @@ __all__ = [
     "format_quantity",
     "hand_calculation_trace",
     "ideal_comparison",
+    "independent_closed_form_checks",
+    "independent_closed_form_records",
     "jet_area",
     "mass_flow_rate",
     "momentum_force",
