@@ -12,6 +12,7 @@ Checked items below include repository-local facts and the cloud checks complete
 - [x] Force sign convention is defined and tested.
 - [x] Zero velocity is handled without division by zero.
 - [x] The hand calculation matches the documented analytical model.
+- [x] Independent closed-form checks pass for normal impact, ideal 90-degree deflection, and ideal 180-degree reversal.
 - [x] Advanced Mode is optional and explicitly supplementary.
 - [x] The application does not claim to be CFD or experimental validation.
 
@@ -23,10 +24,13 @@ Checked items below include repository-local facts and the cloud checks complete
 - [x] Core features require no outbound runtime API.
 - [x] Visitor-entered engineering values are not written to a database.
 - [x] Reports are generated in memory.
+- [x] The one-page presentation summary is generated in memory and contains the required MEC350 inputs, equations, results, chart, assumptions, and model limitation.
 - [x] Critical assets are local and repository-relative.
 - [x] Course Mode exposes SI controls only.
 - [x] Advanced controls are hidden in Course Mode.
-- [x] Presentation View and three classroom presets are available.
+- [x] Presentation View and one compact selector for three classroom cases are available.
+- [x] Course Mode shows one visible control per active physical quantity.
+- [x] Course Mode has four primary destinations; secondary routes remain bookmark-safe.
 - [x] Concise Arabic help is available without partial interface translation.
 
 ## Quality and release artifacts
@@ -35,6 +39,7 @@ Checked items below include repository-local facts and the cloud checks complete
 - [x] `requirements.txt` contains runtime dependencies only.
 - [x] `requirements-dev.txt` contains development tools.
 - [x] README, deployment guide, and this checklist exist.
+- [x] About and generated reports expose application version, model revision, build commit fallback, and UTC generation time.
 - [x] Windows, macOS, and Linux launch helpers exist.
 - [x] Presentation backup artifacts exist.
 - [x] Clean release ZIP exists and excludes environments, caches, secrets, and build artifacts.
@@ -43,6 +48,8 @@ Checked items below include repository-local facts and the cloud checks complete
 - [x] Ruff, Black, mypy, and import checks pass.
 - [x] Headless Streamlit startup and health check pass.
 - [x] Runtime-only clean-environment installation and tests pass.
+- [x] The anonymous public-deployment checker is covered by offline unit tests and documented separately from the normal test suite.
+- [x] GitHub Actions CI runs the complete Python 3.11 quality gate without secrets or paid services.
 
 ## Actual public deployment - complete only after deployment
 

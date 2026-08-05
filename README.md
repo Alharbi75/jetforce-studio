@@ -15,10 +15,11 @@ The [presentation backup](presentation_backup/) contains a default simulator scr
 - A complete default water case is visible immediately: `rho = 1000 kg/m3`, `d = 0.02 m`, `V = 10 m/s`, normal flat plate.
 - Responsive animated engineering schematic with nozzle, jet, plate, control volume, axes, velocity vectors, and force vectors.
 - Primary results `Fx`, `Fy`, and `FR`, plus `A`, `Q`, and mass flow.
-- Step-by-step hand calculation and analytical verification.
+- Step-by-step calculation plus an independent closed-form check for normal impact, ideal 90-degree deflection, and ideal 180-degree reversal.
 - Force-versus-velocity and force-versus-diameter studies with in-memory CSV download.
-- In-memory case CSV, JSON, printable HTML, and PDF report exports.
-- Presentation View and three one-click classroom demonstration cases.
+- In-memory case CSV, JSON, printable HTML, PDF report, and one-page presentation-summary exports.
+- Presentation View plus one compact classroom-case selector and one explicit load action.
+- Application version, model revision, build commit when available, and UTC generation timestamps in About and reports.
 - No visitor login, upload, API key, database, advertising, or runtime external API.
 
 ## Course Mode
@@ -31,6 +32,7 @@ Every fresh browser session begins in Course Mode. It contains only the main con
 - Normal Flat Plate and Deflected Jet / Curved Plate Comparison.
 - Main momentum equation, `Fx`, `Fy`, `FR`, `A`, `Q`, and mass flow.
 - Velocity and diameter studies only.
+- Four primary destinations: Simulator, Calculation and Results, Theory and Assumptions, and Report and Export. About is a compact secondary link; legacy page URLs remain routable.
 
 The approximate room-temperature water preset of `998 kg/m3` remains available in Advanced Mode.
 
@@ -151,23 +153,31 @@ pytest --cov=src --cov-report=term-missing
 ruff check .
 black --check .
 mypy src app.py app_pages
-python -c "import src; import src.reporting; import src.visualizations; print('Imports OK')"
+python -c "import app; import src.calculations; import src.constants; import src.course; import src.models; import src.reporting; import src.traceability; import src.utils; import src.validation; import src.verification; import src.visualizations; print('Imports OK')"
 python -m streamlit run app.py --server.headless=true
 ```
 
-Tests cover the governing equations, sign convention, mass conservation, analytical limits, units, degree conversion, invalid inputs, boundary cases, parameter studies, reports, release integrity, session modes, and Streamlit startup.
+GitHub Actions runs the same Python 3.11 tests, formatting, lint, type, import,
+headless-startup, anonymous local-deployment, and clean release-archive checks
+on every push and pull request. Tests cover the
+governing equations, sign convention, mass conservation, analytical limits,
+units, degree conversion, invalid inputs, boundary cases, parameter studies,
+reports, release integrity, session modes, deployment-checker behavior, and
+Streamlit startup.
 
 ## Project structure
 
 ```text
-app.py                         Streamlit entry point and six-page router
-app_pages/                     Simulator, calculation, charts, theory, export, about
+app.py                         Streamlit entry point, four Course destinations, six stable routes
+app_pages/                     Simulator, calculation, charts, theory, export, about routes
 src/calculations.py            Authoritative SI physics and vectorized studies
 src/models.py                  Typed domain inputs and results
 src/course.py                  Course defaults, modes, and demonstration presets
 src/validation.py              Input validation and hand-calculation support
+src/verification.py            Independent textbook closed-form comparisons
+src/traceability.py            Version, model revision, commit, and timestamp metadata
 src/visualizations.py          Controls, diagrams, metrics, and charts
-src/reporting.py               In-memory CSV, JSON, HTML, and PDF exports
+src/reporting.py               In-memory data, report, and presentation-summary exports
 tests/                         Automated physics, export, UI, and release checks
 assets/                        Local SVG and CSS assets
 docs/                          Derivations, assumptions, verification, and guidance
@@ -175,6 +185,8 @@ presentation_backup/           Static presentation fallback artifacts
 .streamlit/config.toml         Public theme and safe runtime configuration
 DEPLOYMENT.md                  Streamlit Community Cloud procedure
 RELEASE_CHECKLIST.md           Release and post-deployment checks
+.github/workflows/ci.yml       Python 3.11 continuous-integration workflow
+scripts/check_public_deployment.py  Anonymous public-link and health checker
 Dockerfile                     Optional portable fallback
 ```
 
@@ -189,9 +201,11 @@ JetForce Studio is publicly deployed on Streamlit Community Cloud from the
 - **Presentation QR code:** [public_app_qr.png](presentation_backup/public_app_qr.png)
 
 The live deployment has been checked for the default Course Mode result, all
-six pages, report and study downloads, mobile-width layout, effective 200%
-zoom, and browser-console errors. Physical-phone, mobile-data, and independent
-second-browser checks remain owner presentation-day checks.
+stable routes, report and study downloads, mobile-width layout, effective 200%
+zoom, and browser-console errors. Use the independent anonymous deployment
+checker documented in `DEPLOYMENT.md` after every release. Physical-phone,
+mobile-data, and independent second-browser checks remain owner
+presentation-day checks.
 
 ## Privacy
 

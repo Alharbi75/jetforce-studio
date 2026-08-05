@@ -21,21 +21,26 @@ These instructions apply to the entire repository.
 - `src/course.py`: Course/Advanced interface modes, Course defaults, presentation presets, and release copy; it does not implement physics.
 - `src/constants.py`: property presets, limits, units, and shared defaults.
 - `src/utils.py`: numerical formatting and unit conversions.
-- `app.py`: shared Streamlit configuration and the six-page public navigation.
+- `app.py`: shared Streamlit configuration, four-destination Course navigation, and six stable page routes.
 - `app_pages/`: Streamlit presentation pages only; do not duplicate governing equations there.
 - `tests/`: unit, analytical regression, input-validation, and export tests.
 - `docs/`: derivations, assumptions, verification cases, and course-deliverable guidance.
 
 Keep dependencies directed from UI/export code toward the public `src` model/calculation interfaces. Keep Streamlit imports out of physics modules so calculations remain testable without launching the app.
 
-The public navigation contains exactly these pages, in this order:
+The router registers these stable page routes, in this order:
 
 1. `app_pages/1_Simulator.py` - **Simulator** (default)
-2. `app_pages/2_Hand_Calculation.py` - **Hand Calculation**
-3. `app_pages/3_Results_and_Charts.py` - **Results and Charts**
+2. `app_pages/2_Hand_Calculation.py` - **Calculation and Results** in Course Mode; **Hand Calculation** in Advanced Mode
+3. `app_pages/3_Results_and_Charts.py` - **Results and Charts** (hidden from the Course top menu but retained for deep links; visible in Advanced Mode)
 4. `app_pages/4_Theory_and_Assumptions.py` - **Theory and Assumptions**
 5. `app_pages/5_Report_and_Export.py` - **Report and Export**
-6. `app_pages/6_About_Project.py` - **About the Project**
+6. `app_pages/6_About_Project.py` - **About the Project** (compact Course sidebar link; visible in Advanced navigation)
+
+Course Mode exposes exactly four primary top destinations: **Simulator**,
+**Calculation and Results**, **Theory and Assumptions**, and **Report and
+Export**. Keep the hidden legacy routes registered with `st.Page(...,
+visibility="hidden")` so existing bookmarks remain safe.
 
 `st.set_page_config` must be called through the shared entry point before any widget or navigation command. Individual page scripts must not call it again. Keep page links and documentation synchronized with the `app_pages/` paths above.
 Do not place source pages in the legacy `pages/` directory; JetForce Studio declares navigation explicitly with `st.navigation` so the public order and labels remain deterministic.
@@ -43,12 +48,13 @@ Keep `app_pages/` files as direct scripts. Initialize shared per-visitor session
 
 ## Interface modes and release behavior
 
-- **Course Mode** is the fresh-session default. Its textbook case is water at `rho = 1000 kg/m3`, `d = 0.02 m`, `V = 10 m/s`, normal flat-plate impact, and SI display units. It exposes only the main MEC350 inputs, calculations, and velocity/diameter studies.
+- **Course Mode** is the fresh-session default. Its textbook case is water at `rho = 1000 kg/m3`, `d = 0.02 m`, `V = 10 m/s`, normal flat-plate impact, and SI display units. It exposes one visible control per active physical quantity, the main MEC350 calculations, and velocity/diameter studies.
+- Classroom demonstrations use one selector and one **Load Selected Case** action. Keep **Reset to Default** separate; do not restore duplicate preset buttons.
 - **Advanced Mode** reveals supplementary fluids, viscosity and Reynolds-number context, velocity retention, split flow, curved-vane comparisons, alternate display units, and extended studies. These additions must not change the governing momentum balance.
 - Preserve the legacy calculation-layer defaults and public schemas when adding Course-specific defaults. Course presentation policy belongs in `src/course.py` and UI state, not in hard-coded physics results.
 - Switching modes must not silently overwrite the saved Course case. Reset and demonstration controls must load deterministic inputs and invalidate stale export packages.
 - Presentation View may enlarge primary results and hide secondary controls, but it must not change inputs, calculations, units, or exported values.
-- Do not create separate Advanced-only public pages; mode-specific content belongs conditionally inside the same six-page navigation.
+- Do not create separate Advanced-only source pages; mode-specific content belongs conditionally inside the same six stable routes.
 
 ## Governing physics and sign convention
 
