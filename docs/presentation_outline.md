@@ -47,8 +47,8 @@ Use the exact application scope statement on the first slide that shows the inte
 
 ## Slide 7 - Application design and modes (1:15)
 
-- Content: six-page `app_pages/` interface, Course Mode default, optional Advanced Mode, validated SI inputs, shared physics layer, and in-memory exports.
-- Suggested figure: Presentation View on the Simulator page or a compact map of Simulator, Hand Calculation, Results and Charts, Theory and Assumptions, Report and Export, and About the Project.
+- Content: four primary Course destinations backed by six stable `app_pages/` routes, Course Mode default, optional Advanced Mode, validated SI inputs, shared physics layer, and in-memory exports.
+- Suggested figure: Presentation View on the Simulator page or the downloaded one-page presentation summary. If showing navigation, map Simulator, Calculation and Results, Theory and Assumptions, and Report and Export, with About as a compact secondary destination.
 - Important definitions: Course Mode offers Normal Flat Plate and the ideal Deflected Jet / Curved Plate Comparison. Advanced Mode adds prescribed `k`, split fractions `s` and `1-s`, and supplementary diagnostics.
 - Clarification: changing interface mode changes available controls and explanations, not the governing momentum equation.
 
@@ -61,14 +61,14 @@ Use the exact application scope statement on the first slide that shows the inte
 
 ## Slide 9 - Hand calculation and analytical verification (1:30)
 
-- Content: one concise numerical substitution; comparison table for known limiting cases.
+- Content: one concise numerical substitution; the Independent Closed-Form Check table for normal impact, ideal 90-degree deflection, and ideal 180-degree reversal.
 - Suggested figure: hand-calculation steps beside expected/simulator/difference columns.
 - Important result: normal impact with `rho=1000 kg/m3`, `d=0.02 m`, `V=10 m/s` gives `Fx=31.4159 N`.
 - Speaking point: this verifies implementation against the same documented conservation law; it is not experimental validation.
 
 ## Slide 10 - Results and Charts (1:30)
 
-- Content: Course Mode force-versus-velocity and force-versus-diameter charts; add a model-specific parameter only if an Advanced Mode objective requires it.
+- Content: Course Mode force-versus-velocity and force-versus-diameter charts, reached through **Open charts and parameter studies** on **Calculation and Results**; add a model-specific parameter only if an Advanced Mode objective requires it. The supporting chart route is intentionally not a fifth primary Course destination.
 - Suggested figure: clearly labeled Plotly export or report-ready static chart with fixed inputs in the caption.
 - Important relationship: ideal normal-impact force is proportional to `V^2` and `d^2`.
 - Speaking point: doubling velocity gives four times the force when other inputs and the model are unchanged.

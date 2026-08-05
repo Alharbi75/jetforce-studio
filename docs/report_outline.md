@@ -45,7 +45,7 @@ Describe the selected normal-plate or ideal deflected-jet/curved-plate Course co
 
 ## 6. Numerical Model Setup (about 0.75 page)
 
-Explain the software architecture at a high level: `app.py` defines shared configuration and six-page navigation, `app_pages/` contains presentation code, and `src/` contains typed inputs, validation, physics, visualization helpers, and reporting. Note that the physics uses validated SI inputs, model-specific outlet vectors, a shared momentum calculation, double-precision arithmetic, and explicit degree-to-radian conversion. Describe error handling and the safe range of the parameter sweep. Do not reproduce source code unless a short excerpt materially clarifies the method.
+Explain the software architecture at a high level: `app.py` defines shared configuration, four primary Course destinations, and six stable routes; `app_pages/` contains presentation code; and `src/` contains typed inputs, validation, physics, independent closed-form verification, traceability, visualization helpers, and reporting. Note that the physics uses validated SI inputs, model-specific outlet vectors, a shared momentum calculation, double-precision arithmetic, and explicit degree-to-radian conversion. Describe error handling and the safe range of the parameter sweep. Do not reproduce source code unless a short excerpt materially clarifies the method.
 
 ### 6.1 Input Parameters
 
@@ -53,7 +53,7 @@ Provide a table containing only inputs active for the submitted case. A Course M
 
 ## 7. Hand Calculation and Analytical Verification (about 0.75 page)
 
-Use the phrase **analytical verification** for comparisons against closed-form momentum results. Include at least normal impact, unchanged velocity, 180-degree reversal, 90-degree deflection, zero velocity, and symmetric split cases as appropriate. Report expected values, simulator values, absolute differences, tolerance, and pass/fail status. Do not claim experimental validation without traceable measured data and uncertainties.
+Use the phrase **analytical verification** for comparisons against closed-form momentum results. Include the visible independent checks for normal impact, ideal 90-degree deflection, and ideal 180-degree reversal, plus unchanged velocity, zero velocity, and symmetric split cases from the extended regression evidence as appropriate. Report expected values, simulator values, absolute differences, tolerance, and pass/fail status. Do not claim experimental validation without traceable measured data and uncertainties.
 
 ## 8. Results (about 1 page)
 
@@ -65,7 +65,7 @@ Show numerical substitution for area, flow rate, mass flow, outlet velocity comp
 
 ### 8.2 Results and Charts
 
-Use the **Results and Charts** page to include plots that answer specific questions. The Course minimum is force versus velocity and force versus diameter. A model-dependent angle, split, or retention study may be added from Advanced Mode when it supports a stated objective. State which variables were held constant. For an ideal normal jet, connect `F proportional to V^2` and `F proportional to d^2` to the equation rather than describing the curve only.
+From **Calculation and Results**, select **Open charts and parameter studies** to reach the supporting **Results and Charts** page; it is not a separate primary Course navigation item. Use that page to include plots that answer specific questions. The Course minimum is force versus velocity and force versus diameter. A model-dependent angle, split, or retention study may be added from Advanced Mode when it supports a stated objective. State which variables were held constant. For an ideal normal jet, connect `F proportional to V^2` and `F proportional to d^2` to the equation rather than describing the curve only.
 
 ## 9. Discussion (about 1 page)
 

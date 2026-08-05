@@ -26,14 +26,17 @@ On Windows PowerShell, activate with:
 .venv\Scripts\Activate.ps1
 ```
 
-Streamlit normally opens `http://localhost:8501` in the default browser. The top navigation contains exactly six pages:
+Streamlit normally opens `http://localhost:8501` in the default browser. Course Mode keeps four primary destinations in the top navigation:
 
 1. **Simulator**
-2. **Hand Calculation**
-3. **Results and Charts**
-4. **Theory and Assumptions**
-5. **Report and Export**
-6. **About the Project**
+2. **Calculation and Results**
+3. **Theory and Assumptions**
+4. **Report and Export**
+
+**About the Project** is available as a compact secondary sidebar link.
+Advanced Mode also exposes the dedicated **Results and Charts** route and the
+About route in the top navigation. All six source routes remain registered so
+existing bookmarks continue to work.
 
 The sidebar contains the global **Application mode** and **Presentation View** selectors. The active engineering-case controls appear in the Simulator workspace and, where needed, in the sidebar on the other pages.
 
@@ -61,7 +64,8 @@ Switching back to Course Mode restores the saved Course case and SI display poli
 
 Presentation View enlarges the schematic and primary force results and hides selected secondary controls. It changes presentation only: inputs, physics, units, and exported values remain unchanged.
 
-For a short demonstration, use the Simulator presets:
+For a short demonstration, choose one case from **Demonstration case** and
+select **Load Selected Case**:
 
 - **Normal Plate** loads the textbook case.
 - **Double Velocity** changes the normal case from 10 to 20 m/s. Because `F = rho A V^2`, the force becomes four times larger when density and diameter remain fixed.
@@ -116,17 +120,21 @@ The schematic uses the same coordinates and outlet-angle convention as the calcu
 
 Select **Show Calculation** to display the main equations and current numerical substitution on the Simulator page.
 
-## 2. Hand Calculation
+## 2. Calculation and Results
 
-Open **Hand Calculation** to follow the active case through given values, assumptions, area, flow rate, mass flow, inlet/outlet vectors, momentum balance, `Fx`, `Fy`, `FR`, and the final comparison.
+Open **Calculation and Results** to follow the active case through given values, assumptions, area, flow rate, mass flow, inlet/outlet vectors, momentum balance, `Fx`, `Fy`, `FR`, and the final comparison. Advanced Mode labels this route **Hand Calculation**.
 
 Choose **Standard rounded calculation** for presentation values or **More numerical precision** to inspect additional digits. The underlying calculation does not change.
 
-A near-zero difference is expected because the displayed hand calculation and simulator implement the same documented control-volume equation. This is **analytical verification**, not experimental validation. Advanced Mode also shows independent closed-form regression cases.
+A near-zero difference is expected because the displayed hand calculation and simulator implement the same documented control-volume equation. The **Independent Closed-Form Check** separately evaluates textbook formulas for normal impact, ideal 90-degree deflection, and ideal 180-degree reversal and reports expected value, simulator value, absolute difference, and PASS or CHECK. This is **analytical verification**, not experimental validation.
 
-## 3. Results and Charts
+### Supporting charts from Calculation and Results
 
-Course Mode provides one-parameter studies for inlet velocity and jet diameter in SI units:
+In Course Mode, select **Open charts and parameter studies** from **Calculation
+and Results**. This opens the bookmark-safe supporting Results and Charts route,
+which is intentionally omitted from the four-item primary navigation. Course
+Mode provides one-parameter studies for inlet velocity and jet diameter in SI
+units:
 
 1. Select **Force versus inlet velocity** or **Force versus jet diameter**.
 2. Choose the start, stop, and number of study points.
@@ -137,11 +145,11 @@ Only the selected variable changes. For ideal normal impact, force is proportion
 
 Advanced Mode adds applicable angle, split-fraction, and retention studies, plus ideal/non-ideal and momentum-vector views. A selected `k` remains an input assumption; it is not calculated from experiment, CFD, or Reynolds number.
 
-## 4. Theory and Assumptions
+## 3. Theory and Assumptions
 
 Use **Theory and Assumptions** to review the control-volume boundary, coordinate convention, mass and momentum equations, model-specific outlet construction, assumptions, and limitations. Course Mode emphasizes the normal and ideal deflected cases. Advanced Mode reveals split flow, velocity retention, and Reynolds-number context.
 
-## 5. Report and Export
+## 4. Report and Export
 
 The **Report and Export** page prepares artifacts in memory:
 
@@ -149,16 +157,29 @@ The **Report and Export** page prepares artifacts in memory:
 - JSON for a structured record with inputs, results, metadata, assumptions, and units;
 - printable HTML for browser review or printing to PDF;
 - PDF when ReportLab is available and generation succeeds.
+- a printable one-page presentation summary containing the active inputs,
+  control-volume schematic, momentum equation, primary results, flow
+  quantities, force-versus-velocity chart, assumptions, interpretation, and
+  explicit not-CFD limitation.
 
 Course reports can include both velocity and diameter studies, their exact data, and print-ready figures. Review the preview and identity fields, add a case-specific discussion and conclusion, and select **Generate Export Package**. If a format fails, correct the stated problem and select **Retry Report Generation**.
 
 Changing the case or report fields makes an existing package stale and hides its downloads until it is regenerated. Course and Advanced filenames identify their interface mode and generation date.
 
-Every export is a draft. Verify inputs and units, complete student details, insert only references you have personally checked, and edit the discussion and conclusion before submission. If PDF generation is unavailable, use printable HTML and the browser's **Print > Save as PDF** feature.
+Select **Download One-Page Presentation Summary** for the compact printable
+artifact. Every export is generated in memory and is a draft. Verify inputs
+and units, complete student details, insert only references you have personally
+checked, and edit the discussion and conclusion before submission. If PDF
+generation is unavailable, use printable HTML and the browser's **Print > Save
+as PDF** feature.
 
-## 6. About the Project
+## Secondary destination: About the Project
 
-**About the Project** explains Course and Advanced modes, academic scope, limitations, software structure, privacy, and responsible use. A concise Arabic help section is available there and in the sidebar; equations, symbols, and units retain their standard notation.
+**About the Project** explains Course and Advanced modes, academic scope,
+limitations, software structure, privacy, responsible use, application version,
+analytical-model revision, build commit when available, and page-generation
+timestamp. A concise Arabic help section is available there and in the
+sidebar; equations, symbols, and units retain their standard notation.
 
 The application privacy statement is:
 

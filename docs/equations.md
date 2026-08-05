@@ -1,6 +1,6 @@
 # Governing Equations and Model Derivations
 
-The six-page interface uses these equations through one shared calculation layer. Course Mode exposes the normal flat plate and the ideal deflected-jet/curved-plate comparison. Advanced Mode exposes supplementary outlet constructions, velocity retention, and diagnostics. Changing interface mode does not change the governing momentum balance or create a second force formula.
+The interface uses these equations through one shared calculation layer. Course Mode presents four primary destinations while six stable source routes preserve deep links. It exposes the normal flat plate and the ideal deflected-jet/curved-plate comparison. Advanced Mode exposes supplementary outlet constructions, velocity retention, and diagnostics. Changing interface mode does not change the governing momentum balance or create a second force formula.
 
 ## 1. Coordinates, control volume, and sign convention
 

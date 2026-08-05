@@ -80,7 +80,7 @@ Use `pytest.approx` or `numpy.testing` with a typical relative tolerance of `1e-
 
 ## Hand-calculation comparison protocol
 
-1. Open **Hand Calculation** and record all SI inputs and the selected model.
+1. Open **Calculation and Results** in Course Mode (or **Hand Calculation** in Advanced Mode) and record all SI inputs and the selected model.
 2. Display substitutions for area, flow rate, mass flow, the simulator's explicit outlet streams, force components, and resultant.
 3. Compare the displayed hand-calculation values with the simulator's unrounded result.
 4. Report absolute difference. Report percentage difference only when the comparison reference is nonzero.
