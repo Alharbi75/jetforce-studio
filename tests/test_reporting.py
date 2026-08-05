@@ -29,12 +29,14 @@ from src.reporting import (
     export_case_json,
     export_case_pdf,
     export_parametric_csv,
+    export_presentation_summary_html,
     export_printable_html,
     reportlab_available,
     safe_export_filename,
     unit_for_field,
     write_export_file,
 )
+from src.traceability import LOCAL_BUILD, MODEL_REVISION
 
 FIXED_TIME = datetime(2026, 8, 4, 12, 30, tzinfo=UTC)
 ONE_PIXEL_PNG = base64.b64decode(
@@ -65,6 +67,8 @@ def test_payload_uses_domain_serializers_without_repeating_inputs(deflected_resu
 
     assert payload["schema_version"] == "1.0"
     assert payload["report"]["generated_at"] == "2026-08-04T12:30:00+00:00"
+    assert payload["report"]["application_version"] == "2.0.0"
+    assert payload["report"]["model_revision"] == MODEL_REVISION
     assert payload["report"]["disclaimer"] == DISCLAIMER
     assert payload["case"]["inputs"]["model"] == "deflected_jet"
     assert payload["case"]["results"]["fx_n"] == pytest.approx(deflected_result.fx_n)
@@ -76,6 +80,64 @@ def test_payload_uses_domain_serializers_without_repeating_inputs(deflected_resu
     assert payload["references"].startswith("Placeholder")
 
 
+def test_report_traceability_is_reserved_and_visible_in_exports(
+    monkeypatch: pytest.MonkeyPatch, deflected_result
+) -> None:
+    for key in (
+        "JETFORCE_BUILD_COMMIT",
+        "GITHUB_SHA",
+        "SOURCE_VERSION",
+        "VERCEL_GIT_COMMIT_SHA",
+        "RENDER_GIT_COMMIT",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    metadata = {
+        "application_version": "spoofed",
+        "model_revision": "spoofed",
+        "build_commit": "spoofed",
+        "generated_at": "spoofed",
+    }
+    payload = build_report_payload(
+        deflected_result,
+        metadata=metadata,
+        generated_at=FIXED_TIME,
+    )
+
+    expected_traceability = {
+        "application_version": "2.0.0",
+        "model_revision": MODEL_REVISION,
+        "build_commit": LOCAL_BUILD,
+        "generated_at": "2026-08-04T12:30:00+00:00",
+    }
+    assert {key: payload["report"][key] for key in expected_traceability} == expected_traceability
+
+    csv_rows = list(
+        csv.DictReader(
+            io.StringIO(
+                export_case_csv(
+                    deflected_result,
+                    metadata=metadata,
+                    generated_at=FIXED_TIME,
+                ).decode("utf-8")
+            )
+        )
+    )
+    report_fields = {row["field"]: row["value"] for row in csv_rows if row["section"] == "report"}
+    assert report_fields["application_version"] == "2.0.0"
+    assert report_fields["model_revision"] == MODEL_REVISION
+    assert report_fields["build_commit"] == LOCAL_BUILD
+    assert report_fields["generated_at"] == "2026-08-04T12:30:00+00:00"
+
+    exported_html = export_printable_html(
+        deflected_result,
+        metadata=metadata,
+        generated_at=FIXED_TIME,
+    ).decode("utf-8")
+    assert "Application version:</strong> 2.0.0" in exported_html
+    assert f"Model revision:</strong> {MODEL_REVISION}" in exported_html
+    assert f"Build commit:</strong> {LOCAL_BUILD}" in exported_html
+
+
 def test_payload_accepts_independent_mappings() -> None:
     payload = build_report_payload(
         {"density": 998.0, "model": "normal_flat_plate"},
@@ -84,6 +146,7 @@ def test_payload_accepts_independent_mappings() -> None:
     )
     assert payload["case"]["inputs"]["density"] == 998.0
     assert payload["case"]["results"]["fx_n"] == 31.4
+    assert payload["report"]["generated_at"] == "2026-08-04T08:30:00+00:00"
 
 
 @pytest.mark.parametrize(
@@ -241,6 +304,95 @@ def test_printable_html_is_self_contained_semantic_and_escaped(deflected_result)
     assert "Engineering University" in exported
     assert "not a full CFD simulation" in exported
     assert "Student review required" in exported
+
+
+def test_one_page_presentation_summary_contains_required_engineering_content(
+    deflected_inputs: JetInputs,
+) -> None:
+    result = simulate(deflected_inputs)
+    velocity_study = parameter_sweep(deflected_inputs, "velocity", [0.0, 5.0, 10.0, 15.0])
+    exported = export_presentation_summary_html(
+        result,
+        velocity_study=velocity_study,
+        metadata={
+            "interface_mode": "Course Mode",
+            "student_name": "Aisha & Omar",
+            "student_id": "MEC<350>",
+        },
+        generated_at=FIXED_TIME,
+    ).decode("utf-8")
+
+    assert exported.startswith("<!doctype html>")
+    assert exported.count('class="sheet"') == 1
+    assert "@page { size: A4 landscape" in exported
+    assert "Active inputs and primary fluid-on-plate results" in exported
+    assert "Horizontal force" in exported
+    assert "Vertical force" in exported
+    assert "Resultant force" in exported
+    assert "Geometry and control volume" in exported
+    assert "Control volume" in exported and "<svg" in exported
+    assert "F_plate = mdot V_in - sum(mdot_j V_out,j)" in exported
+    assert "Jet cross-sectional area" in exported
+    assert "Volumetric flow rate" in exported
+    assert "Mass flow rate" in exported
+    assert "Force versus inlet velocity" in exported
+    assert "Model assumptions" in exported
+    assert "Interpretation and limitation" in exported
+    assert (
+        "This application uses a numerical control-volume momentum model. The flow "
+        "visualization is illustrative and is not a full CFD simulation." in exported
+    )
+    assert "It is not experimental evidence." in exported
+    assert "Version 2.0.0" in exported
+    assert "MEC350-CV-2D-R1" in exported
+    assert "Deflected Jet" in exported
+    assert "deflected_jet" not in exported
+    assert "Aisha &amp; Omar" in exported
+    assert "MEC&lt;350&gt;" in exported
+    assert "<script src=" not in exported
+    assert "<link rel=" not in exported
+
+
+@pytest.mark.parametrize(
+    ("velocity_study", "message"),
+    [
+        ([{"velocity": 0.0, "Fx_N": 0.0, "Fy_N": 0.0, "FR_N": 0.0}], "two"),
+        (
+            [
+                {"velocity": 0.0, "FR_N": 0.0},
+                {"velocity": 1.0, "FR_N": 1.0},
+            ],
+            "requires velocity",
+        ),
+        (
+            [
+                {"velocity": 1.0, "Fx_N": 1.0, "Fy_N": 0.0, "FR_N": 1.0},
+                {"velocity": 1.0, "Fx_N": 2.0, "Fy_N": 0.0, "FR_N": 2.0},
+            ],
+            "nonzero range",
+        ),
+    ],
+)
+def test_presentation_summary_rejects_invalid_velocity_study(
+    deflected_result, velocity_study: object, message: str
+) -> None:
+    with pytest.raises(ReportDataError, match=message):
+        export_presentation_summary_html(
+            deflected_result,
+            velocity_study=velocity_study,
+            generated_at=FIXED_TIME,
+        )
+
+
+def test_presentation_summary_rejects_text_that_cannot_fit_one_page(deflected_result) -> None:
+    velocity_study = parameter_sweep(deflected_result.inputs, "velocity", [0.0, 10.0])
+    with pytest.raises(ReportDataError, match="title must be at most 120 characters"):
+        export_presentation_summary_html(
+            deflected_result,
+            velocity_study=velocity_study,
+            metadata={"title": "A" * 121},
+            generated_at=FIXED_TIME,
+        )
 
 
 @pytest.mark.parametrize(
@@ -492,6 +644,8 @@ def test_payload_accepts_one_mapping_as_a_one_row_study(deflected_result) -> Non
 def test_generation_time_validation_and_naive_time_normalization(deflected_result) -> None:
     with pytest.raises(ReportDataError, match="cannot be blank"):
         build_report_payload(deflected_result, generated_at="  ")
+    with pytest.raises(ReportDataError, match="valid ISO 8601"):
+        build_report_payload(deflected_result, generated_at="not-a-timestamp")
     payload = build_report_payload(deflected_result, generated_at=datetime(2026, 8, 4, 12, 30))
     assert payload["report"]["generated_at"].endswith("+00:00")
 

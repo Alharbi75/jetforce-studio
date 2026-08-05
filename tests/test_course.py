@@ -13,6 +13,9 @@ from src.calculations import simulate
 from src.constants import COURSE_TEXTBOOK_DENSITY_KG_M3, DEFAULT_DENSITY_KG_M3
 from src.course import (
     COURSE_MODEL_LABELS,
+    COURSE_PRIMARY_DESTINATIONS,
+    COURSE_SECONDARY_DESTINATION,
+    DEMONSTRATION_PRESET_DESCRIPTIONS,
     AppMode,
     DemonstrationPreset,
     demonstration_inputs,
@@ -124,6 +127,18 @@ def test_course_model_allowlist_contains_only_documented_choices() -> None:
     assert ImpactModel.CURVED_VANE not in COURSE_MODEL_LABELS
 
 
+def test_course_navigation_and_demonstration_copy_are_complete() -> None:
+    assert COURSE_PRIMARY_DESTINATIONS == (
+        "Simulator",
+        "Calculation and Results",
+        "Theory and Assumptions",
+        "Report and Export",
+    )
+    assert COURSE_SECONDARY_DESTINATION == "About the Project"
+    assert tuple(DEMONSTRATION_PRESET_DESCRIPTIONS) == tuple(DemonstrationPreset)
+    assert all(DEMONSTRATION_PRESET_DESCRIPTIONS[preset] for preset in DemonstrationPreset)
+
+
 @pytest.mark.parametrize(
     ("preset", "expected"),
     [
@@ -216,6 +231,7 @@ def test_fresh_session_initializes_course_mode_without_clobbering_rerun_edits(
     assert state["jf_previous_mode"] == AppMode.COURSE.value
     assert state["jf_presentation_view"] is False
     assert state["jf_show_calculation"] is False
+    assert state["jf_demo_preset"] == DemonstrationPreset.NORMAL_PLATE.value
     assert_session_matches_inputs(state, textbook_course_inputs())
 
     state["jf_density"] = 1025.0
@@ -261,6 +277,7 @@ def test_reset_to_default_is_complete_idempotent_and_clears_stale_export(
     assert state["jf_mode"] == AppMode.ADVANCED.value
     assert_session_matches_inputs(state, textbook_course_inputs())
     assert state["jf_show_calculation"] is False
+    assert state["jf_demo_preset"] == DemonstrationPreset.NORMAL_PLATE.value
     assert "jf_report_package" not in state
     visualizations.reset_to_default()
     assert dict(state) == first_reset
@@ -279,6 +296,7 @@ def test_loading_demonstration_synchronizes_state_and_invalidates_report(
 
     expected = demonstration_inputs(preset)
     assert_session_matches_inputs(state, expected)
+    assert state["jf_demo_preset"] == preset.value
     assert "jf_report_package" not in state
     assert state["jf_course_case"]["jf_model"] == expected.model.value
     assert state["jf_course_case"]["jf_density"] == expected.density

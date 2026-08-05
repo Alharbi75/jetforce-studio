@@ -50,6 +50,7 @@ def test_release_source_files_and_local_launchers_exist() -> None:
         "requirements-dev.txt",
         "pyproject.toml",
         ".streamlit/config.toml",
+        ".github/workflows/ci.yml",
         ".gitignore",
         ".dockerignore",
         "Dockerfile",
@@ -58,6 +59,7 @@ def test_release_source_files_and_local_launchers_exist() -> None:
         "run_windows.bat",
         "assets/logo.svg",
         "assets/styles.css",
+        "scripts/check_public_deployment.py",
     )
     missing = [path for path in required_files if not (PROJECT_ROOT / path).is_file()]
     assert not missing, f"Required release source files are missing: {missing}"
