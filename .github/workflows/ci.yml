@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -24,6 +24,22 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Repair launcher permissions in repository
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x run_local.sh run_macos.command
+          git update-index --chmod=+x run_local.sh run_macos.command
+          if git diff --cached --quiet; then
+            echo "Launcher permissions already preserved."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Preserve executable launcher permissions"
+          git push origin HEAD:main
 
       - name: Set up Python 3.11 with pip cache
         uses: actions/setup-python@v5
