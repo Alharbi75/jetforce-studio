@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build deterministic, local presentation-fallback artifacts.
+"""Build local presentation-fallback artifacts from the verified default case.
 
 The generated files are snapshots of the documented Course Mode textbook
 case.  They are intentionally separate from the live Streamlit application
@@ -23,11 +23,16 @@ if str(ROOT) not in sys.path:
 from src.calculations import parameter_sweep, simulate  # noqa: E402
 from src.course import textbook_course_inputs  # noqa: E402
 from src.models import SimulationResult  # noqa: E402
-from src.reporting import ReportFigure, export_case_pdf, export_printable_html  # noqa: E402
+from src.reporting import (  # noqa: E402
+    ReportFigure,
+    export_case_pdf,
+    export_presentation_summary_html,
+    export_printable_html,
+)
 from src.validation import hand_calculation_trace  # noqa: E402
 
 OUTPUT_DIR = ROOT / "presentation_backup"
-GENERATED_AT = datetime(2026, 8, 4, 12, 0, tzinfo=UTC)
+GENERATED_AT = datetime(2026, 8, 5, 1, 50, tzinfo=UTC)
 
 
 def _chart(frame: pd.DataFrame, variable: str, destination: Path) -> ReportFigure:
@@ -170,6 +175,14 @@ def main() -> None:
     )
     (OUTPUT_DIR / "default_hand_calculation.pdf").write_bytes(
         export_case_pdf(inputs, result, figures=figures, **options)
+    )
+    (OUTPUT_DIR / "one_page_presentation_summary.html").write_bytes(
+        export_presentation_summary_html(
+            inputs,
+            result,
+            velocity_study=velocity,
+            **options,
+        )
     )
     (OUTPUT_DIR / "study_data.csv").write_text(combined_study.to_csv(index=False), encoding="utf-8")
 

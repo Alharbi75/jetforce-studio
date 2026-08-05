@@ -30,6 +30,7 @@ ROOT_FILES = (
     "run_windows.bat",
 )
 SOURCE_DIRECTORIES = (
+    ".github",
     ".streamlit",
     "app_pages",
     "assets",
