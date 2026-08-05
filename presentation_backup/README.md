@@ -8,9 +8,10 @@ These files are a static snapshot of the documented Course Mode default case:
 - model: Normal Flat Plate
 - calculated force: Fx = FR = 31.4159 N and Fy = 0 N
 
-Use `default_simulator.png` if the live app cannot be shown. The HTML/PDF,
-result table, and charts provide offline evidence of the same calculation.
-They are presentation fallbacks, not an interactive simulator and not CFD.
+Use `default_simulator.png` if the live app cannot be shown. The full HTML/PDF,
+one-page presentation summary, result table, and charts provide offline evidence
+of the same calculation. They are presentation fallbacks, not an interactive
+simulator and not CFD.
 
 The live public application is:
 
