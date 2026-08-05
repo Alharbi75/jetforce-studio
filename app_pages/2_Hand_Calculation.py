@@ -6,7 +6,8 @@ import pandas as pd
 import streamlit as st
 
 from src.course import AppMode
-from src.validation import analytical_verification_records, hand_calculation_trace
+from src.validation import hand_calculation_trace
+from src.verification import independent_closed_form_records
 from src.visualizations import (
     ASSUMPTIONS,
     MODEL_LABELS,
@@ -32,8 +33,13 @@ values = input_snapshot(inputs)
 render_brand_bar()
 render_page_intro(
     "Traceable calculation",
-    "Hand Calculation and Analytical Verification",
-    "Follow the active case from geometry and mass flow through the signed momentum balance, then compare it with the simulator output.",
+    "Calculation and Results" if course_mode else "Hand Calculation and Analytical Verification",
+    (
+        "Follow the active case from geometry and mass flow through the signed momentum balance, "
+        "compare the force result, and continue to the supporting charts."
+        if course_mode
+        else "Follow the active case from geometry and mass flow through the signed momentum balance, then compare it with the simulator output."
+    ),
 )
 render_disclaimer()
 
@@ -201,26 +207,44 @@ else:
         icon=":material/warning:",
     )
 
-if not course_mode:
-    st.divider()
-    st.markdown("## Advanced analytical regression cases")
-    st.caption(
-        "These independent closed-form limits verify model construction and sign convention. They are not experimental measurements and are not CFD validation."
+st.divider()
+st.markdown("### 13. Independent Closed-Form Check")
+st.caption(
+    f"Expected values are evaluated independently from textbook expressions at the active "
+    f"physical scale: ρ = {inputs.density:.6g} kg/m³, d = {inputs.diameter:.6g} m, and "
+    f"V = {inputs.velocity:.6g} m/s. Only the documented normal-plate, 90-degree "
+    "ideal-deflection, and 180-degree ideal-reversal limits are checked. This is analytical "
+    "software verification, not experimental or CFD validation."
+)
+records = pd.DataFrame.from_records(independent_closed_form_records(inputs))
+st.dataframe(
+    records,
+    column_config={
+        "Expected (N)": st.column_config.NumberColumn(format="%.10g"),
+        "Simulator (N)": st.column_config.NumberColumn(format="%.10g"),
+        "Absolute difference (N)": st.column_config.NumberColumn(format="%.3e"),
+        "Tolerance (N)": st.column_config.NumberColumn(format="%.3e"),
+    },
+    width="stretch",
+    hide_index=True,
+)
+passed = int((records["Status"] == "PASS").sum())
+case_count = int(records["Case"].nunique())
+if passed == len(records):
+    st.success(
+        f"All {case_count} supported closed-form cases pass across {passed} component checks.",
+        icon=":material/check_circle:",
     )
-    records = pd.DataFrame.from_records(analytical_verification_records())
-    st.dataframe(records, width="stretch", hide_index=True)
-    passed = int((records["Status"] == "PASS").sum())
-    if passed == len(records):
-        st.success(
-            f"All {passed} analytical regression cases pass.", icon=":material/check_circle:"
-        )
-    else:
-        st.error(f"Only {passed} of {len(records)} analytical cases pass.")
+else:
+    st.error(
+        f"{len(records) - passed} of {len(records)} component checks require review.",
+        icon=":material/error:",
+    )
 
 st.divider()
 st.page_link(
     "app_pages/3_Results_and_Charts.py",
-    label="Continue to Results and Charts",
+    label="Open charts and parameter studies" if course_mode else "Continue to Results and Charts",
     icon=":material/show_chart:",
     width="stretch",
 )

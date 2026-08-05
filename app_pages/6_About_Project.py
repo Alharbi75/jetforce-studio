@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from src.course import COURSE_MODE_EXPLANATION, PRIVACY_STATEMENT
+from src.traceability import traceability_metadata
 from src.visualizations import render_brand_bar, render_disclaimer, render_page_intro
 
 render_brand_bar()
@@ -68,16 +69,31 @@ limitations = (
 for limitation in limitations:
     st.markdown(f"- {limitation}")
 
+st.markdown("## Application traceability")
+traceability = traceability_metadata()
+st.caption(
+    "These identifiers make screenshots and generated reports traceable to the software and analytical-model revision used to produce them."
+)
+with st.container(border=True):
+    st.markdown(
+        f"**Application version:** `{traceability['application_version']}`  \n"
+        f"**Model revision:** `{traceability['model_revision']}`  \n"
+        f"**Build commit:** `{traceability['build_commit']}`  \n"
+        f"**Page generated (UTC):** `{traceability['generated_at']}`"
+    )
+
 st.markdown("## Reproducible software structure")
 st.code(
     """
-app.py                 shared configuration and six-page navigation
-app_pages/             Streamlit presentation pages
+app.py                 four Course destinations and six stable routes
+app_pages/             Streamlit route presentation pages
 src/calculations.py    authoritative SI momentum physics
 src/models.py          typed inputs, vectors, streams, and results
 src/validation.py      input checks and hand-calculation support
+src/verification.py    independent closed-form checks
+src/traceability.py    version and model/build metadata
 src/visualizations.py  result-driven diagrams, controls, and charts
-src/reporting.py       in-memory CSV, JSON, HTML, and PDF exports
+src/reporting.py       in-memory reports and presentation summary
 tests/                 physics, release, export, and UI regression checks
     """.strip(),
     language="text",

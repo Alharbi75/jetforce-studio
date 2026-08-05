@@ -5,13 +5,12 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from src.course import AppMode, DemonstrationPreset
+from src.course import AppMode
 from src.visualizations import (
     create_force_component_chart,
     create_momentum_vector_chart,
     display_value,
     input_snapshot,
-    load_demonstration_case,
     render_assumptions,
     render_brand_bar,
     render_case_summary,
@@ -39,27 +38,6 @@ render_page_intro(
 render_disclaimer()
 
 with st.container(horizontal=True, gap="small"):
-    st.button(
-        "Normal Plate",
-        icon=":material/filter_1:",
-        on_click=load_demonstration_case,
-        args=(DemonstrationPreset.NORMAL_PLATE,),
-        help="Load ρ = 1000 kg/m³, d = 20 mm, V = 10 m/s, normal impact.",
-    )
-    st.button(
-        "Double Velocity",
-        icon=":material/speed:",
-        on_click=load_demonstration_case,
-        args=(DemonstrationPreset.DOUBLE_VELOCITY,),
-        help="Load the normal-plate case at V = 20 m/s to demonstrate the V² relation.",
-    )
-    st.button(
-        "90-Degree Deflection",
-        icon=":material/turn_right:",
-        on_click=load_demonstration_case,
-        args=(DemonstrationPreset.NINETY_DEGREE_DEFLECTION,),
-        help="Load the ideal single-outlet case with β = 90° and k = 1.",
-    )
     st.toggle(
         "Show Calculation",
         key="jf_show_calculation",
@@ -68,9 +46,10 @@ with st.container(horizontal=True, gap="small"):
     with st.popover("Quick Help", icon=":material/help:"):
         st.markdown(
             "1. Set water density, jet diameter, velocity, and impact model.\n"
-            "2. Use the diagram controls to show or hide vectors and the control volume.\n"
-            "3. Read Fx, Fy, and FR as the force exerted by the water on the plate.\n"
-            "4. Open **Hand Calculation** for the complete derivation."
+            "2. Choose a classroom demonstration in the engineering-case panel and select **Load Selected Case**.\n"
+            "3. Use the diagram controls to show or hide vectors and the control volume.\n"
+            "4. Read Fx, Fy, and FR as the force exerted by the water on the plate.\n"
+            "5. Open **Calculation and Results** for the complete derivation and charts."
         )
 
 if course_mode:
@@ -222,16 +201,24 @@ if not course_mode:
         )
 
 st.divider()
-with st.container(horizontal=True, horizontal_alignment="distribute"):
+if course_mode:
     st.page_link(
         "app_pages/2_Hand_Calculation.py",
-        label="Open Hand Calculation",
+        label="Open Calculation and Results",
         icon=":material/calculate:",
         width="stretch",
     )
-    st.page_link(
-        "app_pages/3_Results_and_Charts.py",
-        label="Open Results and Charts",
-        icon=":material/show_chart:",
-        width="stretch",
-    )
+else:
+    with st.container(horizontal=True, horizontal_alignment="distribute"):
+        st.page_link(
+            "app_pages/2_Hand_Calculation.py",
+            label="Open Hand Calculation",
+            icon=":material/calculate:",
+            width="stretch",
+        )
+        st.page_link(
+            "app_pages/3_Results_and_Charts.py",
+            label="Open Results and Charts",
+            icon=":material/show_chart:",
+            width="stretch",
+        )

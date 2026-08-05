@@ -22,6 +22,7 @@ from src.reporting import (
     export_case_csv,
     export_case_json,
     export_case_pdf,
+    export_presentation_summary_html,
     export_printable_html,
     reportlab_available,
     safe_export_filename,
@@ -243,13 +244,20 @@ with identity_columns[0]:
     report_title = st.text_input(
         "Report title",
         value="Interactive Numerical Modeling and Analysis of a Water Jet Striking a Flat or Curved Plate",
+        max_chars=120,
     )
-    student_name = st.text_input("Student name", placeholder="Complete before submission")
-    student_id = st.text_input("Student ID", placeholder="Complete before submission")
+    student_name = st.text_input(
+        "Student name", placeholder="Complete before submission", max_chars=60
+    )
+    student_id = st.text_input("Student ID", placeholder="Complete before submission", max_chars=60)
 with identity_columns[1]:
-    course = st.text_input("Course", value="MEC350 Fluid Mechanics")
-    instructor = st.text_input("Instructor / section", placeholder="Complete before submission")
-    institution = st.text_input("Institution", placeholder="Complete before submission")
+    course = st.text_input("Course", value="MEC350 Fluid Mechanics", max_chars=64)
+    instructor = st.text_input(
+        "Instructor / section", placeholder="Complete before submission", max_chars=60
+    )
+    institution = st.text_input(
+        "Institution", placeholder="Complete before submission", max_chars=60
+    )
 
 st.markdown("## Study and interpretation")
 with st.container(horizontal=True, gap="medium"):
@@ -332,12 +340,22 @@ if st.button(
             generated_at,
             course_mode=course_mode,
         )
+        summary_velocity_study = _study(inputs, "velocity", int(study_points))
         exporters: tuple[tuple[str, Callable[[], bytes]], ...] = (
             ("csv", lambda: export_case_csv(inputs, result, **options)),
             ("json", lambda: export_case_json(inputs, result, **options)),
             (
                 "html",
                 lambda: export_printable_html(inputs, result, figures=figures, **options),
+            ),
+            (
+                "summary_html",
+                lambda: export_presentation_summary_html(
+                    inputs,
+                    result,
+                    velocity_study=summary_velocity_study,
+                    **options,
+                ),
             ),
         )
         for extension, exporter in exporters:
@@ -401,6 +419,19 @@ if package:
                         icon=icon,
                         width="stretch",
                     )
+        if "summary_html" in artifacts:
+            st.download_button(
+                "Download One-Page Presentation Summary",
+                data=artifacts["summary_html"],
+                file_name=safe_export_filename(
+                    "jetforce_presentation_summary",
+                    "html",
+                    generated_at=generated_at,
+                ),
+                mime="text/html",
+                icon=":material/present_to_all:",
+                width="stretch",
+            )
         if "html" in artifacts:
             with st.expander("Preview printable HTML", expanded=False):
                 st.iframe(
